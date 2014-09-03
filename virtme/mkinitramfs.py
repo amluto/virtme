@@ -6,13 +6,13 @@
 # as a file called LICENSE with SHA-256 hash:
 # 8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643
 
-import shutil
-import cpiowriter
 import io
 import os.path
 import shlex
-import modfinder
-import virtmods
+import shutil
+import virtme.cpiowriter
+import virtme.modfinder
+import virtme.virtmods
 
 def make_base_layout(cw):
     for dir in (b'lib', b'bin', b'var', b'etc', b'newroot', b'dev', b'proc',
@@ -147,7 +147,7 @@ class Config:
         self.busybox = None
 
 def mkinitramfs(out, config):
-    cw = cpiowriter.CpioWriter(out)
+    cw = virtme.cpiowriter.CpioWriter(out)
     make_base_layout(cw)
     make_dev_nodes(cw)
     install_busybox(cw, config)
