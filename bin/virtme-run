@@ -7,18 +7,18 @@
 # 8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643
 
 import argparse
-import virtmods
-import modfinder
-import tempfile
-import shutil
-import os
 import fcntl
-import sys
-import shlex
 import inspect
-import mkinitramfs
-import qemu_helpers
-import architectures
+import os
+import shlex
+import shutil
+import sys
+import tempfile
+import virtme.mkinitramfs
+import virtme.architectures
+import virtme.modfinder
+import virtme.qemu_helpers
+import virtme.virtmods
 
 uname = os.uname()
 
@@ -101,15 +101,15 @@ def arg_fail(message):
 def find_kernel_and_mods(args):
     if args.installed_kernel is not None:
         kver = args.installed_kernel
-        modfiles = modfinder.find_modules_from_install(
-            virtmods.MODALIASES, kver=kver)
+        modfiles = virtme.modfinder.find_modules_from_install(
+            virtme.virtmods.MODALIASES, kver=kver)
         moddir = os.path.join('/lib/modules', kver)
         kimg = '/boot/vmlinuz-%s' % kver
 #    Disabled until kmod gets fixed.
 #    elif args.kernel_build_dir is not None:
 #        kimg = os.path.join(args.kernel_build_dir, 'arch/x86/boot/bzImage')
-#        modfiles = modfinder.find_modules_from_install(
-#            virtmods.MODALIASES,
+#        modfiles = virtme.modfinder.find_modules_from_install(
+#            virtme.virtmods.MODALIASES,
 #            moddir=os.path.join(args.kernel_build_dir, '.tmp_moddir'))
     elif args.kimg is not None:
         kimg = args.kimg
@@ -139,19 +139,19 @@ def quote_karg(arg):
 def main():
     args = _ARGPARSER.parse_args()
 
-    qemu = qemu_helpers.Qemu(args.arch)
+    qemu = virtme.qemu_helpers.Qemu(args.arch)
     qemu.probe()
 
     need_initramfs = args.force_initramfs or qemu.cannot_overmount_virtfs
 
-    config = mkinitramfs.Config()
+    config = virtme.mkinitramfs.Config()
 
     kimg,modfiles,moddir = find_kernel_and_mods(args)
     config.modfiles = modfiles
     if config.modfiles:
         need_initramfs = True
 
-    arch = architectures.get(args.arch)
+    arch = virtme.architectures.get(args.arch)
     is_native = (args.arch == uname.machine)
 
     qemuargs = [qemu.qemubin]
@@ -322,7 +322,7 @@ def main():
         if args.busybox is not None:
             config.busybox = args.busybox
         else:
-            config.busybox = mkinitramfs.find_busybox(args.root, is_native)
+            config.busybox = virtme.mkinitramfs.find_busybox(args.root, is_native)
             if config.busybox is None:
                 print('virtme-run: initramfs is needed, and no busybox was found',
                       file=sys.stderr)
@@ -332,7 +332,7 @@ def main():
         tmpfd,tmpname = tempfile.mkstemp('irfs')
         os.unlink(tmpname)
         tmpfile = os.fdopen(tmpfd, 'r+b')
-        mkinitramfs.mkinitramfs(tmpfile, config)
+        virtme.mkinitramfs.mkinitramfs(tmpfile, config)
         tmpfile.flush()
         fcntl.fcntl(tmpfd, fcntl.F_SETFD, 0)
         initrdpath = '/proc/self/fd/%d' % tmpfile.fileno()
