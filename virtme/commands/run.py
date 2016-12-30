@@ -29,7 +29,7 @@ def make_parser():
         description='Virtualize your system (or another) under a kernel image',
     )
 
-    g = parser.add_argument_group(title='Selection of kernel and modules').add_mutually_exclusive_group()
+    g = parser.add_argument_group(title='Selection of kernel').add_mutually_exclusive_group()
     g.add_argument('--installed-kernel', action='store', nargs='?',
                    const=uname.release, default=None, metavar='VERSION',
                    help='Use an installed kernel and its associated modules.  If no version is specified, the running kernel will be used.')
@@ -41,6 +41,9 @@ def make_parser():
                    help='Use a compiled kernel source directory')
 
     g = parser.add_argument_group(title='Kernel options')
+    g.add_argument('--moddir', action='store',
+                   help='Use specified module directory.')
+
     g.add_argument('-a', '--kopt', action='append', default=[],
                    help='Add a kernel option.  You can specify this more than once.')
 
@@ -114,9 +117,9 @@ def arg_fail(message):
 def find_kernel_and_mods(arch, args):
     if args.installed_kernel is not None:
         kver = args.installed_kernel
+        moddir = args.moddir or os.path.join('/lib/modules', kver)
         modfiles = modfinder.find_modules_from_install(
-            virtmods.MODALIASES, kver=kver)
-        moddir = os.path.join('/lib/modules', kver)
+            virtmods.MODALIASES, moddir=moddir)
         kimg = '/boot/vmlinuz-%s' % kver
         dtb = None  # For now
     elif args.kdir is not None:
@@ -136,8 +139,10 @@ def find_kernel_and_mods(arch, args):
             dtb = os.path.join(args.kdir, dtb_path)
     elif args.kimg is not None:
         kimg = args.kimg
-        modfiles = []
-        moddir = None
+        moddir = args.moddir
+        modfiles = modfinder.find_modules_from_install(
+            virtmods.MODALIASES,
+            moddir=moddir) if moddir else []
         dtb = None # TODO: fix this
     else:
         arg_fail('You must specify a kernel to use.')

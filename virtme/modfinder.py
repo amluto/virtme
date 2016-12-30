@@ -19,6 +19,12 @@ import itertools
 _INSMOD_RE = re.compile('insmod (.*[^ ]) *$')
 
 def resolve_dep(modalias, root=None, kver=None, moddir=None):
+    if moddir is not None:
+        moddir = os.path.abspath(moddir)
+        modules = os.path.dirname(moddir)
+        assert modules.endswith('/lib/modules'), 'moddir has to be <root>/lib/modules/<version>'
+        root = modules[:-len('/lib/modules')] or None
+        kver = os.path.basename(moddir)
     args = ['modprobe', '--show-depends']
     args += ['-C', '/var/empty']
     if root is not None:
@@ -27,8 +33,6 @@ def resolve_dep(modalias, root=None, kver=None, moddir=None):
         # If booting the loaded kernel, skip -S.  This helps certain
         # buggy modprobe versions that don't support -S.
         args += ['-S', kver]
-    if moddir is not None:
-        args += ['--moddir', moddir]
     args += ['--', modalias]
 
     deps = []
