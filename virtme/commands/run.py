@@ -15,6 +15,7 @@ import sys
 import shlex
 import re
 import itertools
+import random
 from .. import virtmods
 from .. import modfinder
 from .. import mkinitramfs
@@ -56,6 +57,8 @@ def make_parser():
                    help='Show graphical output instead of using a console.')
     g.add_argument('--net', action='store_true',
                    help='Enable basic network access.')
+    g.add_argument('--bridge', action='store_true',
+                   help='Use qemu-bridge-helper to create a TAP-based bridge')
     g.add_argument('--balloon', action='store_true',
                    help='Allow the host to ask the guest to release memory.')
     g.add_argument('--disk', action='append', default=[], metavar='NAME=PATH',
@@ -161,6 +164,13 @@ def quote_karg(arg):
         return '"%s"' % arg
     else:
         return arg
+
+def random_mac():
+    mac = [ 0x00, 0x16, 0x3e,
+            random.randint(0x00, 0x7f),
+            random.randint(0x00, 0xff),
+            random.randint(0x00, 0xff) ]
+    return ':'.join(map(lambda x: "%02x" % x, mac))
 
 # Allowed characters in mount paths.  We can extend this over time if needed.
 _SAFE_PATH_PATTERN = '[a-zA-Z0-9_+ /.-]+'
@@ -356,7 +366,9 @@ def main():
     if args.script_exec is not None:
         do_script(shlex.quote(args.script_exec), use_exec=True)
 
-    if args.net:
+    if args.bridge:
+        qemuargs.extend(['-netdev', 'tap,helper=/usr/lib/qemu/qemu-bridge-helper,id=hn0', '-device', 'virtio-net-pci,netdev=hn0,id=nic1,mac='+random_mac()])
+    elif args.net:
         qemuargs.extend(['-net', 'nic,model=virtio'])
         qemuargs.extend(['-net', 'user'])
         kernelargs.extend(['virtme.dhcp'])
