@@ -23,6 +23,10 @@ def make_base_layout(cw):
     cw.symlink(b'bin', b'sbin')
     cw.symlink(b'lib', b'lib64')
 
+    # Hack to support systems that expect some form of /usr at boot
+    # (e.g. with a dynamically-linked busybox with libs in /usr/lib)
+    cw.symlink(b'/', b'usr')
+
 def make_dev_nodes(cw):
     cw.mkchardev(b'dev/null', (1, 3), mode=0o666)
     cw.mkchardev(b'dev/kmsg', (1, 11), mode=0o666)
