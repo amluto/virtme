@@ -56,6 +56,10 @@ def make_parser():
                    help='Show graphical output instead of using a console.')
     g.add_argument('--net', action='store_true',
                    help='Enable basic network access.')
+    g.add_argument('--vde-sock', action='store', default=None,
+                   help='Path to VDE network switch socket')
+    g.add_argument('--net-mac', action='store', default='02:ae:65:32:00:00',
+                   help='MAC adresses base for network adapter')
     g.add_argument('--balloon', action='store_true',
                    help='Allow the host to ask the guest to release memory.')
     g.add_argument('--disk', action='append', default=[], metavar='NAME=PATH',
@@ -357,8 +361,15 @@ def main():
         do_script(shlex.quote(args.script_exec), use_exec=True)
 
     if args.net:
-        qemuargs.extend(['-net', 'nic,model=virtio'])
-        qemuargs.extend(['-net', 'user'])
+        netid = 'net0'
+
+        if args.vde_sock:
+            qemuargs.extend(['-netdev', 'vde,id=' + netid + ',sock=' + args.vde_sock ])
+        else:
+            qemuargs.extend(['-netdev', 'user,id=' + netid])
+
+        qemuargs.extend(['-device', 'virtio-net-pci,netdev=' + netid + ',mac=' + args.net_mac])
+
         kernelargs.extend(['virtme.dhcp'])
 
     if args.pwd:

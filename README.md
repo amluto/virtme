@@ -114,6 +114,22 @@ Others
 
 Other architectures may or may not work.  Adding support is trivial, so ping me if you need another architecture.  Unrecognized architectures use a set of maybe-acceptable defaults.
 
+Virtual Networking
+==================
+
+An outside virtual switch can be created by vde_switch (usually from
+the vde2 package). slirpvde can be used to provide DHCP to the VMs that
+connect to the switch. For instance:
+
+    vde_switch --daemon --sock /tmp/switch1
+    slirpvde --daemon -s /tmp/switch1 --dhcp
+
+Then start the VMs with something like:
+
+    virtme-run --installed-kernel --net --vde-sock=/tmp/switch1 --net-mac=12:45:67:00:00:00
+    virtme-run --installed-kernel --net --vde-sock=/tmp/switch1 --net-mac=12:45:67:00:00:01
+
+
 Upcoming features
 =================
 
