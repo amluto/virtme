@@ -1,0 +1,37 @@
+#!/bin/bash
+
+_virtme_run() {
+	local options="
+		--installed-kernel
+		--kimg
+		--kdir
+		--kopt
+		--xen
+		--root
+		--rw
+		--graphics
+		--net
+		--ballon
+		--disk
+		--script-sh
+		--script-exec
+		--arch
+		--busybox
+		--qemu-opt
+		--qemu-opts
+		--force-initramfs
+		--dry-run
+		--show-command
+		--pwd
+		--rwdir
+		--rodir
+	"
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=($(compgen -W "$options" -- "$cur"))
+	fi
+
+	return 0
+}
+
+complete -F _virtme_run virtme-run
