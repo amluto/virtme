@@ -43,6 +43,8 @@ def make_parser():
     g = parser.add_argument_group(title='Kernel options')
     g.add_argument('-a', '--kopt', action='append', default=[],
                    help='Add a kernel option.  You can specify this more than once.')
+    g.add_argument('--mdir', action='store',
+                   help='Use specified module directory.')
 
     g.add_argument('--xen', action='store',
                    help='Boot Xen using the specified uncompressed hypervisor.')
@@ -144,6 +146,8 @@ def find_kernel_and_mods(arch, args):
     else:
         arg_fail('You must specify a kernel to use.')
 
+    if moddir is None and args.mdir:
+        moddir = args.mdir
     return kimg,dtb,modfiles,moddir
 
 def export_virtfs(qemu, arch, qemuargs, path, mount_tag, security_model='none', readonly=True):
