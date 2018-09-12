@@ -233,6 +233,12 @@ echo "virtme-init: console is $consdev"
 install -d -m 0755 /tmp/roothome
 export HOME=/tmp/roothome
 
+if [[ -d /run/virtme/user ]]; then
+    for s in /run/virtme/user/*.sh; do
+        setsid $s 0<>"/dev/$consdev" 1>&0 2>&0
+    done
+fi
+
 # Bring up a functioning shell on the console.  This is a bit magical:
 # We have no controlling terminal because we're attached to a fake
 # console device (probably something like /dev/console), which can't

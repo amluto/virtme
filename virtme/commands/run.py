@@ -87,6 +87,8 @@ def make_parser() -> argparse.ArgumentParser:
                    help='Run a one-line shell script in the guest.')
     g.add_argument('--script-exec', action='store', metavar='BINARY',
                    help='Run the specified binary in the guest.')
+    g.add_argument('--script-dir', action='store', metavar='SHELL_COMMAND',
+                   help='Run user init scripts in the guest.')
 
     g = parser.add_argument_group(
         title='Architecture',
@@ -317,8 +319,14 @@ def do_it() -> int:
                   'virtme.guesttools')
 
     initcmds = ['mkdir -p /run/virtme/guesttools',
-                '/bin/mount -n -t 9p -o ro,version=9p2000.L,trans=virtio,access=any virtme.guesttools /run/virtme/guesttools',
-                'exec /run/virtme/guesttools/virtme-init']
+        '/bin/mount -n -t 9p -o ro,version=9p2000.L,trans=virtio,access=any virtme.guesttools /run/virtme/guesttools']
+
+    if args.script_dir is not None:
+        export_virtfs(qemu, arch, qemuargs, os.path.abspath(args.script_dir), 'virtme.userscriptdir')
+        initcmds.append('mkdir -p /run/virtme/user')
+        initcmds.append('/bin/mount -n -t 9p -o ro,version=9p2000.L,trans=virtio,access=any virtme.userscriptdir /run/virtme/user')
+
+    initcmds.append('exec /run/virtme/guesttools/virtme-init')
 
     # Arrange for modules to end up in the right place
     if kernel.moddir is not None:
