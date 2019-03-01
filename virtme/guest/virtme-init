@@ -121,6 +121,9 @@ fi
 # Set up useful things in /sys, assuming our kernel supports it.
 mount -t configfs configfs /sys/kernel/config &>/dev/null
 mount -t debugfs debugfs /sys/kernel/debug &>/dev/null
+if grep -q -E '(^| )cgroup_no_v1=all($| )' /proc/cmdline; then
+    mount -t cgroup2 cgroup2 /sys/fs/cgroup &>/dev/null
+fi
 
 # Set up filesystems that live in /dev
 mkdir -p -m 0755 /dev/shm /dev/pts
