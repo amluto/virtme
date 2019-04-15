@@ -89,9 +89,11 @@ _GENERIC_CONFIG = [
 
 def main():
     args = _ARGPARSER.parse_args()
-
-    if not os.path.isfile('scripts/kconfig/merge_config.sh'):
-        print('virtme-configkernel must be run in a kernel source directory')
+    kernel_source_prefix = "./"
+    if os.path.islink('source'):
+        kernel_source_prefix = 'source/'
+    if not os.path.isfile(kernel_source_prefix + 'scripts/kconfig/merge_config.sh'):
+        print('virtme-configkernel must be run in a kernel source or a kernel build directory')
         return 1
 
     arch = architectures.get(args.arch)
