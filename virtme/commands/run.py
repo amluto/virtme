@@ -64,6 +64,8 @@ def make_parser():
                    help='Set guest memory and qemu -m flag.')
     g.add_argument('--name', action='store', default=None,
                    help='Set guest hostname and qemu -name flag.')
+    g.add_argument('--usb', action='append', default=[],
+            help='Add a usb devices by specifing vendor:product. You can specify this more than once.')
 
     g = parser.add_argument_group(
         title='Scripting',
@@ -308,6 +310,24 @@ def main():
             driveid = 'disk%d' % i
             qemuargs.extend(['-drive', 'if=none,id=%s,file=%s' % (driveid, fn),
                              '-device', 'scsi-hd,drive=%s,vendor=virtme,product=disk,serial=%s' % (driveid, name)])
+
+    if args.usb:
+        qemuargs.extend(['-usb'])
+            # user will provide product:vendor pair, so check with lsusb output
+        usbs = os.popen('lsusb').read().splitlines()
+        for pv in args.usb:
+            if not re.match('\w{4}:\w{4}', pv):
+                arg_fail('USB prod:vendor %s invalid' % pv)
+
+            entry = [usb for usb in usbs if pv in usb]
+            if not entry:
+                arg_fail('USB %s not found' % pv)
+
+            match = re.search('Bus ([\w]+) Device ([\w]+)', str(entry))
+            if not match:
+                arg_fail('USB bus and device not found for %s' % pv)
+
+            qemuargs.extend(['-device', 'usb-host,hostbus=%d,hostaddr=%d' % (int(match.group(1)), int(match.group(2)))])
 
     has_script = False
 
