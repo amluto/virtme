@@ -116,6 +116,9 @@ def make_parser() -> argparse.ArgumentParser:
                    help='Propagate current working directory to the guest')
     g.add_argument('--cwd', action='store',
                    help='Change guest working directory')
+    g.add_argument('--term', action='store',
+                   default=os.environ.get('TERM'),
+                   help="Alternate TERM to use in the guest (defaults to TERM from the host environment)")
 
     g = parser.add_argument_group(title='Sharing resources with guest')
     g.add_argument('--rwdir', action='append', default=[],
@@ -381,8 +384,8 @@ def do_it() -> int:
                         raise
 
         # Propagate the terminal type
-        if 'TERM' in os.environ:
-            kernelargs.extend(['TERM=%s' % os.environ['TERM']])
+        if args.term:
+            kernelargs.extend(['TERM=%s' % args.term])
 
     if args.balloon:
         qemuargs.extend(['-balloon', 'virtio'])
