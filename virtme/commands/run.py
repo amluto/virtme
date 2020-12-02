@@ -87,6 +87,8 @@ def make_parser() -> argparse.ArgumentParser:
                    help='Run a one-line shell script in the guest.')
     g.add_argument('--script-exec', action='store', metavar='BINARY',
                    help='Run the specified binary in the guest.')
+    g.add_argument('--initcmd', action='append', default=[],
+                   help='Add a command to be executed before the init process.  You can specify more than one.')
 
     g = parser.add_argument_group(
         title='Architecture',
@@ -316,7 +318,7 @@ def do_it() -> int:
     export_virtfs(qemu, arch, qemuargs, guest_tools_path,
                   'virtme.guesttools')
 
-    initcmds = ['mkdir -p /run/virtme/guesttools',
+    initcmds = ['mkdir -p /run/virtme/guesttools'] + args.initcmd + [
                 '/bin/mount -n -t 9p -o ro,version=9p2000.L,trans=virtio,access=any virtme.guesttools /run/virtme/guesttools',
                 'exec /run/virtme/guesttools/virtme-init']
 
