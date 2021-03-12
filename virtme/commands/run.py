@@ -551,9 +551,14 @@ def do_it() -> int:
         else:
             initramfsfd,tmpname = tempfile.mkstemp('irfs')
             os.unlink(tmpname)
-            initramfsfile = os.fdopen(initramfsfd, 'r+b')
-        mkinitramfs.mkinitramfs(initramfsfile, config)
-        initramfsfile.flush()
+
+        compressor = subprocess.Popen(['cat'], stdin=subprocess.PIPE, stdout=initramfsfd)
+        mkinitramfs.mkinitramfs(compressor.stdin, config)
+        compressor.stdin.close()
+        if compressor.wait() != 0:
+            print("writing initramfs failed", file=sys.stderr)
+            return 1
+
         if args.save_initramfs is not None:
             initrdpath = args.save_initramfs
         else:
