@@ -110,6 +110,9 @@ def make_parser() -> argparse.ArgumentParser:
                    help='Show the VM command line')
     g.add_argument('--save-initramfs', action='store',
                    help='Save the generated initramfs to the specified path')
+    g.add_argument('--initramfs-compression', action='store', default='none',
+                   choices=['none', 'gz', 'lz4', 'xz', 'zstd'],
+                   help='Compression method to use for initramfs')
     g.add_argument('--show-boot-console', action='store_true',
                    help='Show the boot console when running scripts')
 
@@ -271,6 +274,14 @@ def sanitize_disk_args(func: str, arg: str) -> Tuple[str, str]:
         arg_fail("%s device names cannot contain '=' or ','" % (func))
 
     return name, fn
+
+def initramfs_compress_cmd(method: str) -> List[str]:
+    if method == 'none': return ['cat']
+    if method == 'gz':   return ['gzip', '-n', '-9', '-f']
+    if method == 'lz4':  return ['lz4', '-l', '-9', '-f']
+    if method == 'xz':   return ['xz', '--check=crc32', '--lzma2=dict=1MiB']
+    if method == 'zstd': return ['zstd', '-19']
+    arg_fail("Unsupported initramfs compression method %s" % (method))
 
 # Allowed characters in mount paths.  We can extend this over time if needed.
 _SAFE_PATH_PATTERN = '[a-zA-Z0-9_+ /.-]+'
@@ -552,7 +563,8 @@ def do_it() -> int:
             initramfsfd,tmpname = tempfile.mkstemp('irfs')
             os.unlink(tmpname)
 
-        compressor = subprocess.Popen(['cat'], stdin=subprocess.PIPE, stdout=initramfsfd)
+        compress_cmd = initramfs_compress_cmd(args.initramfs_compression)
+        compressor = subprocess.Popen(compress_cmd, stdin=subprocess.PIPE, stdout=initramfsfd)
         mkinitramfs.mkinitramfs(compressor.stdin, config)
         compressor.stdin.close()
         if compressor.wait() != 0:
