@@ -12,6 +12,7 @@ import io
 import os.path
 import shlex
 import itertools
+import subprocess
 from . import cpiowriter
 from . import util
 
@@ -23,6 +24,10 @@ def make_base_layout(cw):
     cw.symlink(b'bin', b'sbin')
     cw.symlink(b'lib', b'lib64')
 
+    # Hack to support systems that expect some form of /usr at boot
+    # (e.g. with a dynamically-linked busybox with libs in /usr/lib)
+    cw.symlink(b'/', b'usr')
+
 def make_dev_nodes(cw):
     cw.mkchardev(b'dev/null', (1, 3), mode=0o666)
     cw.mkchardev(b'dev/kmsg', (1, 11), mode=0o666)
@@ -31,6 +36,31 @@ def make_dev_nodes(cw):
 def install_busybox(cw, config):
     with open(config.busybox, 'rb') as busybox:
         cw.write_file(name=b'bin/busybox', body=busybox, mode=0o755)
+
+    # HACK: install libraries if busybox is dynamically linked
+    try:
+        bbldd = subprocess.check_output(['ldd', config.busybox])
+    except subprocess.CalledProcessError:
+        # assume we're working with a statically-linked busybox
+        pass
+    else:
+        for line in bbldd.splitlines():
+            line = line.decode('ascii').strip()
+            parts = line.split()
+            if 'linux-vdso.so' in parts[0]:
+                # don't need to bother with VDSO
+                continue
+            elif parts[1] == '=>' and parts[2][0] == '/':
+                # normal libs are of the form 'libfoo.so => /path/to/libfoo.so (0xdeadbeef)'
+                hostpath = parts[2]
+            elif parts[0][0] == '/':
+                # ld.so has the absolute path as the first field
+                hostpath = parts[0]
+            else:
+                raise ValueError("can't handle line from `ldd busybox`: '%s'" % line)
+            guestpath  = 'lib/%s' % os.path.basename(hostpath)
+            with open(hostpath, 'rb') as lib:
+                cw.write_file(name=guestpath.encode('ascii'), body=lib, mode=0o755)
 
     for tool in ('sh', 'mount', 'umount', 'switch_root', 'sleep', 'mkdir',
                  'mknod', 'insmod', 'cp', 'cat'):
