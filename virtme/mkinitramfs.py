@@ -28,9 +28,12 @@ def make_dev_nodes(cw):
     cw.mkchardev(b'dev/kmsg', (1, 11), mode=0o666)
     cw.mkchardev(b'dev/console', (5, 1), mode=0o660)
 
+def copy(cw, src, dst, mode):
+    with open(src, 'rb') as f:
+        cw.write_file(name=dst, body=f, mode=mode)
+
 def install_busybox(cw, config):
-    with open(config.busybox, 'rb') as busybox:
-        cw.write_file(name=b'bin/busybox', body=busybox, mode=0o755)
+    copy(cw, config.busybox, b'bin/busybox', 0o755)
 
     for tool in ('sh', 'mount', 'umount', 'switch_root', 'sleep', 'mkdir',
                  'mknod', 'insmod', 'cp', 'cat'):
