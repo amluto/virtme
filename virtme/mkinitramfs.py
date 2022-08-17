@@ -14,6 +14,32 @@ import shlex
 import itertools
 from . import cpiowriter
 from . import util
+from elftools.elf.elffile import ELFFile
+from elftools.elf.dynamic import DynamicSection
+
+ld_paths = ['/lib', '/lib64', '/usr/lib', '/usr/lib64']
+
+def is_dt_needed(tag):
+    return tag.entry.d_tag == 'DT_NEEDED'
+
+def find_library_path(needed):
+    for ld_path in ld_paths:
+        ld_path = os.path.join(ld_path, needed)
+        if os.path.isfile(ld_path):
+            return (ld_path, ld_path.lstrip('/'))
+
+def find_needed_paths(executable):
+    with open(executable, 'rb') as f:
+        elffile = ELFFile(f)
+
+        dynamic = elffile.get_section_by_name('.dynamic')
+        if not dynamic:
+            return []
+
+        tags = dynamic.iter_tags()
+        neededs = [tag.needed for tag in tags if is_dt_needed(tag)]
+
+        return [find_library_path(needed) for needed in neededs]
 
 def make_base_layout(cw):
     for dir in (b'lib', b'bin', b'var', b'etc', b'newroot', b'dev', b'proc',
@@ -34,6 +60,9 @@ def copy(cw, src, dst, mode):
 
 def install_busybox(cw, config):
     copy(cw, config.busybox, b'bin/busybox', 0o755)
+
+    for (needed_path, target_path) in find_needed_paths(config.busybox):
+        copy(cw, needed_path, target_path.encode('ascii'), 0o755)
 
     for tool in ('sh', 'mount', 'umount', 'switch_root', 'sleep', 'mkdir',
                  'mknod', 'insmod', 'cp', 'cat'):
