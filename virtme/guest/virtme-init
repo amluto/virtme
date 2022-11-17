@@ -225,6 +225,7 @@ if [[ ! -e "/dev/$consdev" ]]; then
 fi
 
 # Parameters that start with virtme_ shouldn't pollute the environment
+local_stty_con=${virtme_stty_con}
 for p in "${!virtme_@}"; do export -n "$p"; done
 
 echo "virtme-init: console is $consdev"
@@ -241,8 +242,8 @@ export HOME=/tmp/roothome
 # setsid binary or the system call, I don't know).
 while true; do
     # Program the console sensibly
-    if [[ -n "${virtme_stty_con}" ]]; then
-	stty ${virtme_stty_con} <"/dev/$consdev"
+    if [[ -n "${local_stty_con}" ]]; then
+	stty ${local_stty_con} <"/dev/$consdev"
     fi
 
     setsid bash 0<>"/dev/$consdev" 1>&0 2>&0
