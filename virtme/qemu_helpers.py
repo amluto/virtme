@@ -31,12 +31,21 @@ class Qemu(object):
         if self.version is None:
             self.version = subprocess.check_output([self.qemubin, '--version'])\
                                      .decode('utf-8')
-            self.cannot_overmount_virtfs = (
-                re.search(r'version 1\.[012345]', self.version) is not None)
+
+            # Parse version parts into a tuple of ints, default to (0,)
+            m = re.search(r'version ((?:\d\.)*\d)', self.version)
+            if m is None:
+                version_parts = (0,)
+            else:
+                try:
+                    version_parts = tuple(int(i) for i in m.group(1).split('.'))
+                except ValueError:
+                    version_parts = (0,)
+
+            self.cannot_overmount_virtfs = version_parts <= (1, 5)
 
             # QEMU 4.2+ supports -fsdev multidevs=remap
-            self.has_multidevs = (
-                re.search(r'version (?:1\.|2\.|3\.|4\.[01][^\d])', self.version) is None)
+            self.has_multidevs = version_parts >= (4, 2)
 
     def quote_optarg(self, a: str) -> str:
         """Quote an argument to an option."""
