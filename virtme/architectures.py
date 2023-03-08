@@ -22,7 +22,7 @@ class Arch(object):
         return 'ttyS%d' % index
 
     @staticmethod
-    def qemuargs(is_native) -> List[str]:
+    def qemuargs(is_native, has_watchdog_arg) -> List[str]:
         return []
 
     @staticmethod
@@ -56,8 +56,8 @@ class Arch(object):
 
 class Arch_unknown(Arch):
     @staticmethod
-    def qemuargs(is_native):
-        return Arch.qemuargs(is_native)
+    def qemuargs(is_native, has_watchdog_arg):
+        return Arch.qemuargs(is_native, has_watchdog_arg)
 
 class Arch_x86(Arch):
     def __init__(self, name):
@@ -67,11 +67,14 @@ class Arch_x86(Arch):
         self.defconfig_target = '%s_defconfig' % name
 
     @staticmethod
-    def qemuargs(is_native):
-        ret = Arch.qemuargs(is_native)
+    def qemuargs(is_native, has_watchdog_arg):
+        ret = Arch.qemuargs(is_native, has_watchdog_arg)
 
         # Add a watchdog.  This is useful for testing.
-        ret.extend(['-watchdog', 'i6300esb'])
+        if has_watchdog_arg:
+            ret.extend(['-watchdog', 'i6300esb'])
+        else:
+            ret.extend(['-device', 'i6300esb'])
 
         if is_native and os.access('/dev/kvm', os.R_OK):
             # If we're likely to use KVM, request a full-featured CPU.
@@ -122,8 +125,8 @@ class Arch_arm(Arch):
         self.defconfig_target = 'vexpress_defconfig'
 
     @staticmethod
-    def qemuargs(is_native):
-        ret = Arch.qemuargs(is_native)
+    def qemuargs(is_native, has_watchdog_arg):
+        ret = Arch.qemuargs(is_native, has_watchdog_arg)
 
         # Emulate a vexpress-a15.
         ret.extend(['-M', 'vexpress-a15'])
@@ -162,8 +165,8 @@ class Arch_aarch64(Arch):
         self.gccname = 'aarch64'
 
     @staticmethod
-    def qemuargs(is_native):
-        ret = Arch.qemuargs(is_native)
+    def qemuargs(is_native, has_watchdog_arg):
+        ret = Arch.qemuargs(is_native, has_watchdog_arg)
 
         if is_native:
             ret.extend(['-M', 'virt,gic-version=host'])
@@ -204,7 +207,7 @@ class Arch_ppc64(Arch):
         self.gccname = 'ppc64'
 
     def qemuargs(self, is_native):
-        ret = Arch.qemuargs(is_native)
+        ret = Arch.qemuargs(is_native, has_watchdog_arg)
 
         ret.extend(['-M', 'pseries'])
 
@@ -224,7 +227,7 @@ class Arch_riscv64(Arch):
         self.gccname = 'riscv64'
 
     def qemuargs(self, is_native):
-        ret = Arch.qemuargs(is_native)
+        ret = Arch.qemuargs(is_native, has_watchdog_arg)
 
         ret.extend(['-machine', 'virt'])
         ret.extend(['-bios', 'default'])
@@ -248,7 +251,7 @@ class Arch_sparc64(Arch):
         self.gccname = 'sparc64'
 
     def qemuargs(self, is_native):
-        ret = Arch.qemuargs(is_native)
+        ret = Arch.qemuargs(is_native, has_watchdog_arg)
 
         return ret
 
@@ -271,8 +274,8 @@ class Arch_s390x(Arch):
     def virtio_dev_type(virtiotype):
         return 'virtio-%s-ccw' % virtiotype
 
-    def qemuargs(self, is_native):
-        ret = Arch.qemuargs(is_native)
+    def qemuargs(self, is_native, has_watchdog_arg):
+        ret = Arch.qemuargs(is_native, has_watchdog_arg)
 
         # Ask for the latest version of s390-ccw
         ret.extend(['-M', 's390-ccw-virtio'])
