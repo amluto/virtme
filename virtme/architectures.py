@@ -71,7 +71,7 @@ class Arch_x86(Arch):
         ret = Arch.qemuargs(is_native)
 
         # Add a watchdog.  This is useful for testing.
-        ret.extend(['-watchdog', 'i6300esb'])
+        ret.extend(['-device', 'i6300esb', '-action', 'watchdog=pause'])
 
         if is_native and os.access('/dev/kvm', os.R_OK):
             # If we're likely to use KVM, request a full-featured CPU.
