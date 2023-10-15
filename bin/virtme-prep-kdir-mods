@@ -24,7 +24,8 @@ ln -srfT . "$MODDIR/build"
 # Remove all preexisting symlinks and add symlinks to all modules that belong
 # to the build kenrnel.
 find "$MODDIR/kernel" -type l -print0 |xargs -0 rm -f --
-while read -r i; do
+while read -r in; do
+    i=${in/%\.o/.ko}
     [ ! -e "$i" ] && i=$(echo "$i" | sed s:^kernel/::)
     mkdir -p "$MODDIR/kernel/$(dirname "$i")"
     ln -sr "$i" "$MODDIR/kernel/$i"
